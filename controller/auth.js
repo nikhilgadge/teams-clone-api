@@ -58,7 +58,11 @@ const login = async (req, res) => {
       newRefreshTokenArray = [];
     }
 
-    res.clearCookie("refreshToken", { httpOnly: true });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "None",
+      secure: true,
+    });
   }
 
   // save/push refresh token
@@ -69,11 +73,15 @@ const login = async (req, res) => {
   res.cookie("accessToken", accessToken, {
     maxAge: 300000, //5min
     httpOnly: true,
+    sameSite: "None",
+    secure: true,
   });
 
   res.cookie("refreshToken", refreshToken, {
     maxAge: 3.154e10, //1year
     httpOnly: true,
+    sameSite: "None",
+    secure: true,
   });
 
   res.status(200).json({
@@ -126,6 +134,8 @@ const logout = async (req, res) => {
   if (!foundUser) {
     res.clearCookie("refreshToken", {
       httpOnly: true,
+      sameSite: "None",
+      secure: true,
     });
     return res.sendStatus(204);
   }
@@ -139,13 +149,15 @@ const logout = async (req, res) => {
 
   console.log(result);
 
-  res.cookie("accessToken", "", {
-    maxAge: "0",
+  res.clearCookie("refreshToken", {
     httpOnly: true,
+    sameSite: "None",
+    secure: true,
   });
-  res.cookie("refreshToken", "", {
-    maxAge: "0",
+  res.clearCookie("accessToken", {
     httpOnly: true,
+    sameSite: "None",
+    secure: true,
   });
   res.sendStatus(204);
 };
@@ -156,7 +168,11 @@ const refreshToken = async (req, res) => {
   const refreshToken = cookies.refreshToken;
 
   // clear the cookie after extracting data from it
-  res.clearCookie("refreshToken", { httpOnly: true });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: true,
+  });
 
   const foundUser = await User.findOne({ refreshToken }).exec();
 
@@ -211,11 +227,15 @@ const refreshToken = async (req, res) => {
     res.cookie("accessToken", accessToken, {
       maxAge: 300000, //5min
       httpOnly: true,
+      sameSite: "None",
+      secure: true,
     });
 
     res.cookie("refreshToken", newRefreshToken, {
       maxAge: 3.154e10, //1year
       httpOnly: true,
+      sameSite: "None",
+      secure: true,
     });
 
     res.json({
