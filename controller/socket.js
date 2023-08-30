@@ -52,6 +52,27 @@ const onConnection = (globalIO) => (socket) => {
       .to(userIds[toEmail]?.socketId)
       .emit("call-accepted", { answer, fromEmail: socket.user.email, roomId });
   });
+
+  socket.on("negotiationneeded", (data) => {
+    const { offer, toEmail } = data;
+
+    // send offer to user requested email for negociation
+    socket.to(userIds[toEmail]?.socketId).emit("negotiationneeded", {
+      offer,
+      fromEmail: socket.user.email,
+    });
+  });
+
+  // negotiation-accpeted
+  socket.on("negotiation-accpeted", (data) => {
+    const { answer, toEmail } = data;
+
+    // send answer to user requested email as negociation is accepted
+    socket.to(userIds[toEmail]?.socketId).emit("negotiation-accpeted", {
+      answer,
+      fromEmail: socket.user.email,
+    });
+  });
 };
 
 const onMessage = (socket) => async (data) => {
