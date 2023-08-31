@@ -73,6 +73,24 @@ const onConnection = (globalIO) => (socket) => {
       fromEmail: socket.user.email,
     });
   });
+
+  socket.on("ready", (data) => {
+    const { toEmail } = data;
+
+    // send answer to user requested email as negociation is accepted
+    socket.to(userIds[toEmail]?.socketId).emit("ready", {
+      fromEmail: socket.user.email,
+    });
+  });
+
+  socket.on("ice-candidate", (data) => {
+    const { toEmail, candidate } = data;
+
+    socket.to(userIds[toEmail]?.socketId).emit("ice-candidate", {
+      fromEmail: socket.user.email,
+      candidate: candidate,
+    });
+  });
 };
 
 const onMessage = (socket) => async (data) => {
