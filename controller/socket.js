@@ -3,6 +3,7 @@ const { userIds, io } = require("../utils");
 const { createOrAddConversation } = require("./conversation");
 //temporary stogare for {email => {socketId , status}}
 
+const rooms = {};
 const onConnection = (globalIO) => (socket) => {
   io.globalIo = globalIO;
   console.log(`User connected ${socket.user.email}`);
@@ -31,65 +32,27 @@ const onConnection = (globalIO) => (socket) => {
       });
   });
 
-  // webrtc
-  socket.on("initiate-call", (data, cb) => {
-    const { roomId, emailId, offer } = data;
+  socket.on("join-room", ({ roomID, toEmail }) => {
+    socket.join(roomID);
+    socket.to(roomID).emit("user-joined", socket.id);
 
-    // send offer to user requested email
-    socket
-      .to(userIds[emailId]?.socketId)
-      .emit("incoming-call", { offer, fromEmail: socket.user.email, roomId });
-
-    // call initiated
-    cb();
+    if (toEmail) {
+      socket
+        .to(userIds[toEmail].socketId)
+        .emit("incoming-call", { roomID, fromEmail: socket.user.email });
+    }
   });
 
-  socket.on("accept-call", (data) => {
-    const { answer, roomId, toEmail } = data;
-
-    // send answer to user requested email
-    socket
-      .to(userIds[toEmail]?.socketId)
-      .emit("call-accepted", { answer, fromEmail: socket.user.email, roomId });
+  socket.on("offer", (payload) => {
+    globalIO.to(payload.target).emit("offer", payload);
   });
 
-  socket.on("negotiationneeded", (data) => {
-    const { offer, toEmail } = data;
-
-    // send offer to user requested email for negociation
-    socket.to(userIds[toEmail]?.socketId).emit("negotiationneeded", {
-      offer,
-      fromEmail: socket.user.email,
-    });
+  socket.on("answer", (payload) => {
+    globalIO.to(payload.target).emit("answer", payload);
   });
 
-  // negotiation-accpeted
-  socket.on("negotiation-accpeted", (data) => {
-    const { answer, toEmail } = data;
-
-    // send answer to user requested email as negociation is accepted
-    socket.to(userIds[toEmail]?.socketId).emit("negotiation-accpeted", {
-      answer,
-      fromEmail: socket.user.email,
-    });
-  });
-
-  socket.on("ready", (data) => {
-    const { toEmail } = data;
-
-    // send answer to user requested email as negociation is accepted
-    socket.to(userIds[toEmail]?.socketId).emit("ready", {
-      fromEmail: socket.user.email,
-    });
-  });
-
-  socket.on("ice-candidate", (data) => {
-    const { toEmail, candidate } = data;
-
-    socket.to(userIds[toEmail]?.socketId).emit("ice-candidate", {
-      fromEmail: socket.user.email,
-      candidate: candidate,
-    });
+  socket.on("ice-candidate", (incoming) => {
+    globalIO.to(incoming.target).emit("ice-candidate", incoming.candidate);
   });
 };
 
